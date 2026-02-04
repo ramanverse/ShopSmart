@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  phone         String?
+  role          String    @default("user")
+  banned        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  wishlists   Wishlist[]
+  enquiries   Enquiry[]
+  testDrives  TestDrive[]
+  sellRequests SellRequest[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Car {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  brand            String
+  model            String
+  year             Int
+  variant          String?
+  price            Float
+  kmDriven         Int
+  fuelType         String
+  transmission     String
+  bodyType         String
+  color            String
+  owners           Int      @default(1)
+  registrationState String
+  description      String?
+  engineCC         Int?
+  power            String?
+  torque           String?
+  mileage          String?
+  length           Int?
+  width            Int?
+  height           Int?
+  wheelbase        Int?
+  features         String   @default("[]")
+  inspectionReport String   @default("[]")
+  status           String   @default("available")
+  featured         Boolean  @default(false)
+  showroomId       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  images     CarImage[]
+  enquiries  Enquiry[]
+  testDrives TestDrive[]
+  wishlists  Wishlist[]
+  showroom   Showroom?   @relation(fields: [showroomId], references: [id])
+}
+
+model CarImage {
+  id        String   @id @default(cuid())
+  url       String
+  publicId  String?
+  carId     String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
+model Enquiry {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  message     String?
+  preferredTime String?
+  carId       String
+  userId      String?
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  car  Car   @relation(fields: [carId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model TestDrive {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  date        DateTime
+  timeSlot    String
+  carId       String
+  userId      String?
+  status      String   @default("pending")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  car  Car   @relation(fields: [carId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model SellRequest {
+  id               String   @id @default(cuid())
+  referenceId      String   @unique
+  brand            String
+  model            String
+  year             Int
+  variant          String?
+  kmDriven         Int
+  fuelType         String
+  transmission     String
+  color            String
+  owners           Int
+  accidentHistory  Boolean  @default(false)
+  serviceHistory   Boolean  @default(true)
+  tyreCondition    String?
+  modifications    String?
+  name             String
+  phone            String
+  email            String?
+  city             String
+  preferredPickup  String?
+  photos           String   @default("[]")
+  status           String   @default("new")
+  userId           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  carId     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, carId])
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?
+  content     String
+  coverImage  String?
+  category    String
+  author      String
+  authorImage String?
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  name      String
+  city      String
+  rating    Int
+  comment   String
+  carModel  String?
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Showroom {
+  id        String   @id @default(cuid())
+  city      String
+  address   String
+  phone     String
+  email     String?
+  hours     String
+  mapEmbed  String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cars Car[]
+}
+
+model Newsletter {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  stripeId      String   @unique
+  amount        Float
+  currency      String   @default("inr")
+  status        String
+  carId         String?
+  userId        String?
+  customerEmail String?
+  createdAt     DateTime @default(now())
+}
